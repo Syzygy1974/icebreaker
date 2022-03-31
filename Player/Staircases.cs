@@ -27,14 +27,13 @@ public class StaircasesManager {
         cover = false;
     }
 
-    // Es llamado cuando el Player sale del proximity collider de la escalera.
-    public void exitProximity() {
-        if (priorityActivation == false && collisionActive) {
-            collisionActive = false;
-            StaircasesColission(data, false);
-        }
-        
-    }
+    // // Es llamado cuando el Player sale del proximity collider de la escalera.
+    // public void exitProximity() {
+    //     if (priorityActivation == false && collisionActive) {
+    //         collisionActive = false;
+    //         StaircasesColission(data, false);
+    //     }
+    // }
 
     // Se llama cuando el Player esta pisando una escalera.
     public void groundStaircases() {
@@ -47,7 +46,6 @@ public class StaircasesManager {
             }
         }
     }
-
 
     // Cuando NO pisa una escalera.
     public void groundNoStaircases() {
