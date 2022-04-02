@@ -11,7 +11,9 @@ public class Use : MonoBehaviour
 
     public Text description;
 
+    string objectType ;
     StaircasesData staircasesData;
+    ElevatorData elevatorData;
 
     void Awake()
     {
@@ -23,6 +25,24 @@ public class Use : MonoBehaviour
         loadedObject = false;
     }
 
+
+    // =========================================================================================
+    // GetMessage para: Elevator.
+    // =========================================================================================
+    // Recive la informacion del objeto del collider correspondiente.
+    public void GetMessageElevator(ElevatorData data) {
+        elevatorData = data;
+        loadedObject = true;
+        if (!elevatorData.active) {
+            description.text = "Usar";
+            objectType = "";
+        }
+        else {
+            description.text = elevatorData.guiName;
+            objectType = "Elevator";
+        }
+    }
+
     // =========================================================================================
     // GetMessage para: Staircases.
     // =========================================================================================
@@ -32,26 +52,29 @@ public class Use : MonoBehaviour
         loadedObject = true;
         if (!staircasesData.active) {
             description.text = "Usar";
+            objectType = "";
         }
         else {
             description.text = staircasesData.guiName;
+            objectType = "Staircases";
         }
-        
     }
 
     // =========================================================================================
-    // Cuando se preciona "USE".
+    // Cuando se presiona "USE".
     // =========================================================================================
     // Envia la informacion del objeto a PlayerControles2D.
     public void UseDown()
     {
-        // UseDown tiene que reconocer que tipo de objeto esta cargado para poder informar a Player !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-        if (loadedObject) {
-            // Solo envia el mensaje a UseStaircases en caso que la escalera este activa (Player dentro del proximity).
+        if (objectType == "Elevator") {
+                if (elevatorData.active) {
+                    playerController.UseElevator(elevatorData);
+                }
+        }
+        else if (objectType == "Staircases") {
             if (staircasesData.active) {
                 playerController.UseStaircases(staircasesData);
             }
-            
         }
     }
 

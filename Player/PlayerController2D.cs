@@ -90,7 +90,13 @@ public class PlayerController2D : MonoBehaviour
 
     public static StaircasesManager staircasesManager = new StaircasesManager();
 
-    // ======================== USE REVIVER ========================
+
+    public void UseElevator(ElevatorData data) {
+        Debug.Log ("Intenta usar el Asensor.");
+        data.elevator.SendMessage("Call");
+    }
+
+    // ======================== USE RECEIVER ========================
     // Esta funcion es llamada por "Use Button" y recive la informacion sobre la escalera actual.
     // Pone al personaje en movimiento en direccion hacia la escalera y envia los datos
     // de la escalera al staircasesManager, mediante la funcion useButton().
@@ -249,6 +255,7 @@ private void UpdateFriction() {
 
     }
 }
+
 
 private void UpdateStaircasesCollision() {
     if (groundType2.Ground == GroundType.Staircases) {

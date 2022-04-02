@@ -1,12 +1,25 @@
 using System.Collections;
 using System.Collections.Generic;
-// using System.Threading.Tasks;
 using UnityEngine;
 
 public class ElevatorController : MonoBehaviour
 {
+
+    bool onFloor;
+
+    public void GetMessageFloorCollider() {
+        Debug.Log ("FRENA...");
+        Stop();
+        onFloor = true;
+    }
+
     private Rigidbody2D controllerRigidbody;
     Vector2 movementInput;
+
+    public void Call() {
+        Debug.Log ("LLAMADA A ASENSOR.");
+        Down();
+    }
 
     public void Up() {
         movementInput = new Vector2 (0, 3);
@@ -23,10 +36,10 @@ public class ElevatorController : MonoBehaviour
     // Start is called before the first frame update
     void Awake()
     {
-        controllerRigidbody = GetComponentInParent<Rigidbody2D>();
+        controllerRigidbody = GetComponent<Rigidbody2D>();
         Debug.Log ("GET COMPONENT! " + controllerRigidbody);
 
-        // Up();
+        // Down();
     }
 
     // Update is called once per frame
@@ -42,6 +55,7 @@ public class ElevatorController : MonoBehaviour
 
         // // Calcula aceleracion.
         velocity += movementInput * 5 * Time.fixedDeltaTime;
+        velocity.y = movementInput.normalized.y * 5f;
 
         // // Una vez aplicada de aceleracion de movementInput, lo dejo en 0.
         // movementInput = Vector2.zero;
@@ -50,24 +64,5 @@ public class ElevatorController : MonoBehaviour
         controllerRigidbody.velocity = velocity;
 
     }
-
-    void OnTriggerEnter2D(Collider2D collision) {
-
-        if (collision.gameObject.tag == "Floor") {
-            // useButton.SendMessage( "GetMessageStaircases", data);
-            Debug.Log ("TOCO EL PISO.");
-            // Stop();
-        }
-
-    }
-
-    // void OnTriggerExit2D(Collider2D collision) {
-    //     if (collision.gameObject.tag == "Floor") {
-    //         Debug.Log ("YA NO TOCA EL PISO");
-    //         // StaircasesData data = new StaircasesData();
-    //         // data.active = false;
-    //         // useButton.SendMessage( "GetMessageStaircases", data);
-    //     }
-    // }
 
 }
