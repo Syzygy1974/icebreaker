@@ -4,11 +4,11 @@ using UnityEngine;
 
 public class Down : guiObject
 {
-    private newElevatorController elevatorController;
+    private ElevatorController elevatorController;
 
     void Awake()
     {
-        elevatorController = FindObjectOfType<newElevatorController>();
+        elevatorController = FindObjectOfType<ElevatorController>();
     }
 
     public void DownDown()

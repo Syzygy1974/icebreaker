@@ -4,38 +4,23 @@ using UnityEngine;
 
 public class ElevatorController : MonoBehaviour
 {
+    public GameObject useButton;
     public GameObject GUI;
-    // private bool onFloor;
-    private GameObject player;
-    public static GameObject gui;
-    ElevatorCalls calls = new ElevatorCalls();
+    public int floor;
+
+    private int touch = 0;
+    [HideInInspector]  public GameObject elevator;
+    private GameObject player;        
+    private ElevatorCalls calls = new ElevatorCalls();
     private Rigidbody2D controllerRigidbody;
-    Vector2 movementInput;
+    private Collider2D controllerCollider;
+    private Vector2 movementInput;
     public int maxFloor;
     public int minFloor;
     public float elevatorVelocity;
-
-    // ======================== RECEIVER: FLOOR COLIDER ========================
-    // Recive del FLOOR COLLIDER la el piso en el que se encuentra el Elevator
-    // y si se detecto al entrar (2) o salir (1) del collider.
-    // =========================================================================
-    // Si la direccion es UP y el handler del collider es ON ENTER o 
-    // la direccion es DOWN y se trata de un ON EXIT, entonces el Elevator esta
-    // pasando por un piso. La funcion CurrentFloor determinara si se sigue moviendo
-    // o se detiene en un piso destino.
-    public void GetMessageFloorCollider(int[] floorData) {
-        int floor = floorData[0];
-        int colliderType = floorData[1];
-
-        if (calls.Direction() == 2 && colliderType == 2) {
-            calls.CurrentFloor(floor);
-            calls.RemoveCall(floor);
-        }
-        else if (calls.Direction() == 1 && colliderType == 1) {
-            calls.CurrentFloor(floor);
-            calls.RemoveCall(floor);
-        }
-    }
+    private LayerMask floorGroundMask;
+    private RigidbodyConstraints2D originalConstraints;
+    private Floor floorScript;
 
     // ======================== RECEIVER: PLAYER / NPC =========================
     // Recive una llamada al Elevator y la agrega en el pool de llamadas.
@@ -67,6 +52,7 @@ public class ElevatorController : MonoBehaviour
             movementInput = new Vector2 (0, -elevatorVelocity);
         }
     }
+
     // ======================== RECEIVER: CHARACTER  ===========================
     // Recive el aviso del player indicando que ya esta dentro del Elevator.
     // Activa los botondes de la GUI del ELEVATOR.
@@ -75,22 +61,31 @@ public class ElevatorController : MonoBehaviour
         GUI.SendMessage ("GetMessage", "Controls:ElevatorButtonsOn");
     }
 
+    // ======================== Funciones de movimiento  =======================
+    // =========================================================================
     public void Up() {
+        controllerRigidbody.constraints = originalConstraints;
         movementInput = new Vector2 (0, elevatorVelocity);
     }
 
     public void Down() {
+        controllerRigidbody.constraints = originalConstraints;
         movementInput = new Vector2 (0, -elevatorVelocity);
     }
 
     public void Stop() {
         movementInput = new Vector2 (0, 0);
+        controllerRigidbody.constraints = RigidbodyConstraints2D.FreezePositionY;
+        // Debug.Log ("METO FEREEZ");
     }
 
+    // ================= Clase que maneja las llamadas al Elevator =============
+    // Lista de llamadas, eliminacion de llamadas por donde ya paso el Elevator y
+    // determina la direccion que debera seguir segun la lista.
+    // =========================================================================
     private class ElevatorCalls : MonoBehaviour {
 
         List<int> elevatorCalls = new List<int>();
-        bool moving = false;
         int currentFloor;
         int upOrDown; //0 Stoped, 1 Up, 2 Down.
 
@@ -112,6 +107,7 @@ public class ElevatorController : MonoBehaviour
         }
 
         public void CurrentFloor (int floor) {
+        Debug.Log(System.Environment.StackTrace);
         currentFloor = floor;
         UpOrDown();
         }
@@ -134,7 +130,8 @@ public class ElevatorController : MonoBehaviour
         }
 
         public void UpOrDown () {
-            if (PendingCalls() > 0) {
+           if (PendingCalls() > 0) {
+
                 if (currentFloor > NextFloor()) {
                     upOrDown = 2;
                 }
@@ -174,11 +171,17 @@ public class ElevatorController : MonoBehaviour
     // Start is called before the first frame update
     void Awake()
     {
+        calls.CurrentFloor(floor);
+        floorGroundMask = LayerMask.GetMask("Floor");
         controllerRigidbody = GetComponent<Rigidbody2D>();
+        originalConstraints = controllerRigidbody.constraints;
+        controllerCollider = GetComponent<Collider2D>();
+        elevator = gameObject;
     }
 
     void FixedUpdate()
     {
+        UpdateFloor();
         UpdateDirection();
         UpdateVelocity();
     }
@@ -196,6 +199,48 @@ public class ElevatorController : MonoBehaviour
 
         // Asigna la velocidad al RigidBody.
         controllerRigidbody.velocity = velocity;
+    }
 
+    // ======================== UPDATEFLOOR =========================
+    // Determina cuando Elevator pasa por un piso. Reemplaza al
+    // anterior Floor Collider.
+    // ==============================================================
+    void UpdateFloor() {
+        Vector2 position = transform.position;
+        Vector2 direction = Vector2.down;
+        float distance = 0.1f;
+
+        // RayCast desde el centro (x) y en la parte inferior de del Elevator (y).
+        Vector3 rayPosition = new Vector3 (controllerCollider.bounds.center.x, (controllerCollider.bounds.center.y - controllerCollider.bounds.extents.y), 0);
+        RaycastHit2D hit = Physics2D.Raycast( rayPosition, direction, distance, floorGroundMask);
+        // Debug.DrawRay(rayPosition, direction * distance, Color.red);
+
+        // Si el RayCast toca el floor: Envia el numero de piso a GetMessageCollider.
+        // Esto detecta el piso cuando el Elevator esta bajando.
+        if (hit.collider != null) {
+            if (touch != 1){
+                floorScript = hit.collider.gameObject.GetComponent<Floor>();
+                touch = 1;
+                if (calls.Direction() == 2) {
+                    // Informa en que piso esta y lo elimina de la lista de pisos a recorrer.
+                    calls.CurrentFloor(floorScript.FloorNumber());
+                    calls.RemoveCall(floorScript.FloorNumber());
+                }
+            }
+        }
+        // Si existio una colision y liego termina, actualiza el piso cuando
+        // el Elevator esta subiendo. Hacerlo de esta forma evita que el 
+        // Elevator se detenga enterrado en el piso (donde se daria la primera
+        // colision)
+        else {
+            if (touch == 1) {
+                touch = 0;
+                if (calls.Direction() == 1) {
+                    calls.CurrentFloor(floorScript.FloorNumber());
+                    calls.RemoveCall(floorScript.FloorNumber());
+                }
+            }
+            touch = 0;
+        }
     }
 }
