@@ -3,17 +3,19 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class Use : MonoBehaviour
+public class Use : guiObject
 {
     private bool loadedObject = false;
     public GameObject Player;
     private PlayerController2D playerController;
+    bool doorLocked;
 
     public Text description;
 
     string objectType ;
     StaircasesData staircasesData;
     ElevatorData elevatorData;
+    DoorData doorData;
 
     void Awake()
     {
@@ -25,12 +27,30 @@ public class Use : MonoBehaviour
         loadedObject = false;
     }
 
+    // =========================================================================================
+    // GetMessage para: Door.
+    // =========================================================================================
+    // Recive la informacion del objeto del collider correspondiente.
+    public void GetMessageDoor(DoorData data) {
+        doorData = data;
+        loadedObject = true;
+
+        if (!doorData.active) {
+            description.text = "Usar";
+            objectType = "";
+        }
+        else {
+            description.text = "Abrir";
+            objectType = "Door";
+        }
+    }
 
     // =========================================================================================
     // GetMessage para: Elevator.
     // =========================================================================================
     // Recive la informacion del objeto del collider correspondiente.
     public void GetMessageElevator(ElevatorData data) {
+        // Debug.Log ("LLEGA HASTA ACA..." +  data.guiName);
         elevatorData = data;
         loadedObject = true;
         if (!elevatorData.active) {
@@ -74,6 +94,23 @@ public class Use : MonoBehaviour
         else if (objectType == "Staircases") {
             if (staircasesData.active) {
                 playerController.UseStaircases(staircasesData);
+            }
+        }
+        else if (objectType == "Door") {
+            if (doorData.active) {
+                // Si la puerta esta requiere llava, envia el mensaje al Player para
+                // chequear si posee la misma.
+                // Si no requiere llave, envia el mensaje a la puerta directamente para abrirla.
+                // (No informa al character en este caso).
+                if (doorData.locked) {
+                    bool a = playerController.LockedDoor(doorData.number);
+                    if (a) {
+                        doorData.door.SendMessage("Open");    
+                    }
+                } else {
+                    doorData.door.SendMessage("Open");
+                    // playerController.UseStaircases(doorData);
+                }
             }
         }
     }

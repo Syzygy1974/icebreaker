@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.U2D.Animation;
 
-public class RightHandGreeting : MonoBehaviour
+public class RightHandGreeting : guiObject
 {
     private SpriteResolver spriteResolver;
 

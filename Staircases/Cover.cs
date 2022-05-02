@@ -13,13 +13,11 @@ public class Cover : MonoBehaviour
 
     void EnableCover()
     {
-        Debug.Log ("ACTIVA");
         m_Collider.enabled = true;
     }
 
     void DisableCover()
     {
-        Debug.Log ("DESACTIVA");
         m_Collider.enabled = false;
     }
 }

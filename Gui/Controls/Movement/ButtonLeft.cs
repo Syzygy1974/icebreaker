@@ -3,18 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class ButtonGreeting : MonoBehaviour
-    {
+public class ButtonLeft : guiObject
+{
 
     private PlayerController2D playerController;
-    private GameObject avatar;
 
     // Start is called before the first frame update
-    void Start()
+    void Start() // ESTO NO DEBERIA IR EN AWAKE ??????
     {
-        //avatar = GameObject.Find("avatar_nk");
         playerController = FindObjectOfType<PlayerController2D>();
-        Debug.Log("asigna avatar");
     }
 
     // Update is called once per frame
@@ -23,9 +20,14 @@ public class ButtonGreeting : MonoBehaviour
 
     }
 
-    public void Test()
+    public void LeftDown()
     {
-        Debug.Log("Test");
-        playerController.Greeting();
+        playerController.WalkingLeftDown();
     }
+  
+    public void LefttUp()
+    {
+        playerController.WalkingLeftUp();
+    }
+
 }

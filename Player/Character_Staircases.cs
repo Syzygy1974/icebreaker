@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Staircases {
+namespace Character_Staircases {
 
 public class StaircasesManager {
     private bool collisionActive = false;
@@ -27,14 +27,6 @@ public class StaircasesManager {
         cover = false;
     }
 
-    // // Es llamado cuando el Player sale del proximity collider de la escalera.
-    // public void exitProximity() {
-    //     if (priorityActivation == false && collisionActive) {
-    //         collisionActive = false;
-    //         StaircasesColission(data, false);
-    //     }
-    // }
-
     // Se llama cuando el Player esta pisando una escalera.
     public void groundStaircases() {
         if (collisionActive) {
@@ -53,7 +45,7 @@ public class StaircasesManager {
             if (!onStaircasesPrev) { return; }
             onStaircasesPrev = onStaircases;
             onStaircases = false;
-            // Si ahora no esta pisando escaler y en el paso anterior SI lo hacia: Desactiva la colision con las escalaras.
+            // Si ahora no esta pisando escalera y en el paso anterior SI lo hacia: Desactiva la colision con las escalaras.
             if (onStaircasesPrev == true && onStaircases == false){
                 PlayerController2D.isWalkingLeft = false;
                 PlayerController2D.isWalkingRight = false;

@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
-using Staircases;
+using Character_Staircases;
 // git push https://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@github.com/Syzygy1974/icebreaker.git
 
 public enum GroundType
@@ -10,15 +10,45 @@ public enum GroundType
     None,
     Soft,
     Hard,
-    Staircases
+    Staircases,
+    Elevator
 }
-
 
 public struct WhatDoIHaveUnder
 {
     public GroundType Ground;
     public bool inContact;
 }
+
+public class ItemManager {
+
+    List<int> keys = new List<int>();
+
+    int cash;
+    
+    // ======================== CASH ===========================
+    public void AddCash (int amount){
+        cash += amount;
+    }
+    
+    public void SubCash (int amount){
+        cash -= amount;
+    }
+
+    public int Cash() {
+        return cash;
+    }
+
+    // ======================== KEYS===========================
+    public void AddKey (int keyNumber){
+        keys.Add (keyNumber);
+    }
+
+    public bool isTheKey (int keyNumber){
+        return keys.Contains (keyNumber);
+    }
+}
+
 
 public class PlayerController2D : MonoBehaviour
 {
@@ -52,9 +82,11 @@ public class PlayerController2D : MonoBehaviour
     private LayerMask softGroundMask;
     private LayerMask hardGroundMask;
     private LayerMask staircasesGroundMask;
+    private LayerMask elevatorGroundMask;
     private GameObject debugText;
     private GameObject debugText2;
     private GameObject debugText3;
+    public GameObject GUI;
 
     private Vector2 movementInput;
     private bool jumpInput;
@@ -87,13 +119,77 @@ public class PlayerController2D : MonoBehaviour
     bool enLaEscalera = false;
     bool collisionConElFuckingAccess = false;
     public bool CanMove { get; set; }
+    public ElevatorData elevatorData;
+    private bool walkToElevator;
 
     public static StaircasesManager staircasesManager = new StaircasesManager();
+    public FixedJoint2D fj;
+    private bool elevatorStopped;
 
+    ItemManager itemManager;
+    public bool playerInElevator = false;
 
-    public void UseElevator(ElevatorData data) {
-        Debug.Log ("Intenta usar el Asensor.");
-        data.elevator.SendMessage("Call");
+    public bool IsInElevator() {
+        return playerInElevator;
+    }
+
+    // Regresa 1 si el objeto debe desplazarse hacia la derecha, 2 si se desplazara
+    // a la izquierda y 0 si esta en el rango del waypoint.
+    public int WaypointDirection (Vector2 waypointPosition, Vector2 objectPosition) {
+        Vector2 relativePosition;
+        relativePosition = (waypointPosition - objectPosition);
+        if (relativePosition.sqrMagnitude < 2.0f) { return 0; }
+        else if (relativePosition.x > 0) { return 1; }
+        else return 2;
+    }
+
+    // ======================== RECEIVER: USE BUTTON ===========================
+    // Recive la informacion del Elevator que el Proximity Collider envio
+    // previamente al boton USE.
+    // Salva esa informacion (instancia) y le agrega el gameObjet del Player
+    // para que el Elevator pueda comunicarse con el character.
+    // Finalmente realiza la llamada al Elevador (Call).
+    // =========================================================================
+    public void UseElevator (ElevatorData data) {
+        elevatorData = data;
+        elevatorData.player = gameObject;
+        data.elevator.SendMessage("Call", data);
+    }
+
+    // ======================== RECEIVER: ELEVATOR =============================
+    // Cuando se pula USE (Take/Subir) (Elevator en mismo piso que personaje)
+    // desplaza al personaje al centro del elevator (si es necesario).
+    // Una ves posicionado la func. UpdateElevatorWalking se encarga de
+    // "introducirlo" al elevator.
+    // =========================================================================
+    public void ElevatorInTheFloor () {
+        // GUI.SendMessage ("GetMessage", "Controls:ButtonsOff");
+        walkToElevator = true;
+
+        // Define en que direccion se desplaza el personaje para centrarse en el ascensor.
+        if ((WaypointDirection (elevatorData.proximityCenter, controllerRigidbody.position)) == 1) { isWalkingRight = true; }
+        else isWalkingLeft = true;
+        Debug.Log ("LLEGA HASTA ACA............2");
+    }
+
+    // ======================== RECEIVER: GUI: ELEVATOR / EXIT =================
+    // Recive el boton EXIT del GUI-ELEVATOR. 
+    // Rerotna al personaje layer default, elimina el FixedJoint, Luego desactiva
+    // la Elevator GUI (UP/DOWN/EXIT) y activa la GUI de control de jugador.
+    // =========================================================================
+    public void ElevatorExit () {
+        if (elevatorStopped) {
+            CanMove = true;
+            gameObject.layer = 0;      // Entra al ascensor: Pone al personaje en el layer del elevator.
+            Destroy (fj);
+            GUI.SendMessage ("GetMessage", "Controls:ElevatorButtonsOff");
+            // GUI.SendMessage ("GetMessage", "Controls:ButtonsOn");
+            playerInElevator = false;
+        }
+    }
+
+    public void ElevatorStopped(bool motionState) {
+        elevatorStopped = motionState;
     }
 
     // ======================== USE RECEIVER ========================
@@ -108,15 +204,36 @@ public class PlayerController2D : MonoBehaviour
 
         // Calcula la direccion en la que se movera el personaje para acceder a la escalera
         // e inicia el movimiento en esa direccion.
-        Vector2 relativePosition;
-        relativePosition = (data.initialPosition - controllerRigidbody.position);
-        if (relativePosition.x > 0) { 
-            isWalkingRight = true;
-        }
-        else {
-            isWalkingLeft = true;
-        }
+        if ((WaypointDirection (data.initialPosition, controllerRigidbody.position)) == 1) { isWalkingRight = true; }
+        else if ((WaypointDirection (data.initialPosition, controllerRigidbody.position)) == 2) { isWalkingLeft = true; }
     }
+
+    // ======================== RECEIVER: USE (LOCKED DOOR) ====================
+    // =========================================================================
+    public bool LockedDoor (int doorNumber) {
+        return true;
+    }
+
+    // ======================== RECEIVER: GET OBJECT  ==========================
+    // =========================================================================
+    public void GetItem (CollectibleItems item) {
+        // Cash
+        // Llave
+        // Bolso
+        // Barreta
+        // Items: 1: Cash, 2: Key.
+
+        if (item.type == 1) {
+            itemManager.AddCash(item.value);
+            Debug.Log ("CASH: " + itemManager.Cash());
+            }
+
+        if (item.type == 2) {
+            itemManager.AddKey(item.value);
+            }
+
+    }
+
 
     void ChangeSprite()
     {
@@ -127,7 +244,7 @@ public class PlayerController2D : MonoBehaviour
     {
         isGreeting = true;
     }
-
+ 
     public void WalkingRightDown()
     {
         isWalkingRight = true;
@@ -153,7 +270,9 @@ public class PlayerController2D : MonoBehaviour
     void Awake()
     {
 
-        //spriteRenderer = GetComponent<RightHand>();
+       itemManager = new ItemManager();
+
+       //spriteRenderer = GetComponent<RightHand>();
 
         debugText = GameObject.Find("DebugText");
         debugText2 = GameObject.Find("DebugText2");
@@ -167,6 +286,7 @@ public class PlayerController2D : MonoBehaviour
         softGroundMask = LayerMask.GetMask("Ground Soft");
         hardGroundMask = LayerMask.GetMask("Ground Hard");
         staircasesGroundMask = LayerMask.GetMask("Staircases");
+        elevatorGroundMask = LayerMask.GetMask("Elevators");
 
         animator = GetComponent<Animator>();
         animatorWalking = Animator.StringToHash("Walking");
@@ -182,28 +302,30 @@ public class PlayerController2D : MonoBehaviour
 void Update()
     {
         // Control de desplazamiento por teclado.
-        float horizontalInput = Input.GetAxisRaw("Horizontal");
-        if (horizontalInput != 0) {
-            Vector2 moveHorizontal;
-            moveHorizontal = new Vector2(0f, 0f);
-            if (horizontalInput > 0) moveHorizontal = new Vector2(15f, 0f);
-            if (horizontalInput < 0) moveHorizontal = new Vector2(-15f, 0f);
-            movementInput = moveHorizontal;
-        }
+        if (CanMove) {
+            float horizontalInput = Input.GetAxisRaw("Horizontal");
+            if (horizontalInput != 0) {
+                Vector2 moveHorizontal;
+                moveHorizontal = new Vector2(0f, 0f);
+                if (horizontalInput > 0) moveHorizontal = new Vector2(15f, 0f);
+                if (horizontalInput < 0) moveHorizontal = new Vector2(-15f, 0f);
+                movementInput = moveHorizontal;
+            }
 
-        if (isWalkingRight)
-        {
-            Vector2 moveHorizontal;
-            moveHorizontal = new Vector2(15f, 0f);
-            movementInput = moveHorizontal; //??????????????????????????????????? LO USO PARA EL JUMP Y/O SUBIR/BAJAR O LO SACO?
-        }
+            if (isWalkingRight)
+            {
+                Vector2 moveHorizontal;
+                moveHorizontal = new Vector2(15f, 0f);
+                movementInput = moveHorizontal; //??????????????????????????????????? LO USO PARA EL JUMP Y/O SUBIR/BAJAR O LO SACO?
+            }
 
-        if (isWalkingLeft)
-        {
-            Vector2 moveHorizontal;
-            // float horizontalInput = Input.GetAxisRaw("Horizontal");
-            moveHorizontal = new Vector2(-15f, 0f);
-            movementInput = moveHorizontal; //??????????????????????????????????? LO USO PARA EL JUMP Y/O SUBIR/BAJAR O LO SACO?
+            if (isWalkingLeft)
+            {
+                Vector2 moveHorizontal;
+                // float horizontalInput = Input.GetAxisRaw("Horizontal");
+                moveHorizontal = new Vector2(-15f, 0f);
+                movementInput = moveHorizontal; //??????????????????????????????????? LO USO PARA EL JUMP Y/O SUBIR/BAJAR O LO SACO?
+            }
         }
 
         // Salto.
@@ -230,6 +352,7 @@ void FixedUpdate()
     {
         UpdateGrounding();
         UpdateStaircasesCollision();
+        UpdateElevatorWalking();
         UpdateFriction();
         UpdateVelocity();
         UpdateDirection();
@@ -240,6 +363,30 @@ void FixedUpdate()
         // PARA QUE SE USA???
         // prevVelocity = controllerRigidbody.velocity;
     }
+
+    // ================= POSICIONA PLAYER PARA SUBIR ELEVATOR  ================
+    // Si el personaje esta en posicion de ingresar Elevator: Cambia el personaje
+    // al layer de los Elevators, anula su desplazamiento, informa al Elevator
+    // que el personaje esta dentro.
+    // Finalmente crea un FixedJoint para inmovilidar al personaje durante el
+    // desplazamiento.
+    // ========================================================================
+private void UpdateElevatorWalking(){
+    if (walkToElevator){
+            if ((WaypointDirection (elevatorData.proximityCenter, controllerRigidbody.position)) == 0) {
+            CanMove = false;            // El personaje NO SE DESPLAZA mientras permanezca en el ascensor.
+            gameObject.layer = 14;      // Entra al ascensor: Pone al personaje en el layer del elevator.
+            isWalkingRight = false;
+            isWalkingLeft = false;
+            walkToElevator = false;
+            playerInElevator = true;
+            elevatorData.elevator.SendMessage("PlayerInElevator");
+            fj = gameObject.AddComponent<FixedJoint2D >() as FixedJoint2D;
+            fj.connectedBody = elevatorData.elevator.GetComponent<Rigidbody2D>();
+                                            Debug.Log ("LLEGA HASTA ACA............3");
+        }
+    }
+}
 
 
 private void UpdateFriction() {
@@ -256,7 +403,6 @@ private void UpdateFriction() {
     }
 }
 
-
 private void UpdateStaircasesCollision() {
     if (groundType2.Ground == GroundType.Staircases) {
         staircasesManager.groundStaircases();
@@ -266,10 +412,8 @@ private void UpdateStaircasesCollision() {
     }
 }
 
-
 private void UpdateVelocity()
     {
-
         Vector2 velocity = controllerRigidbody.velocity;
 
         // Calcula aceleracion.
@@ -291,9 +435,9 @@ private void UpdateVelocity()
         // Una vez aplicada de aceleracion de movementInput, lo dejo en 0.
         movementInput = Vector2.zero;
 
-        // Asigna la velocidad al RigidBody.
+        // Asigna la velocidad al RigidBody.eleva
         controllerRigidbody.velocity = velocity;
-        
+
         if (controllerRigidbody.velocity.x >0 || controllerRigidbody.velocity.y >0) {
             Debug.DrawLine(transform.position, transform.position * controllerRigidbody.velocity, Color.red);
         }
@@ -308,7 +452,6 @@ private void UpdateVelocity()
         else { 
             animator.SetBool("Walking", false); 
         }
-
 
         // Update animator running speed
         // var horizontalSpeedNormalized = Mathf.Abs(velocity.x) / maxSpeed;
@@ -333,7 +476,6 @@ private void UpdateDirection()
             isFlipped = true;
             puppet.localScale = flippedScale;
         }
-
     }
 
 
