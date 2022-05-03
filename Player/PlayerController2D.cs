@@ -23,14 +23,15 @@ public struct WhatDoIHaveUnder
 public class ItemManager {
 
     List<int> keys = new List<int>();
-
     int cash;
-    
+    public GameObject hud;
+
     // ======================== CASH ===========================
     public void AddCash (int amount){
         cash += amount;
+        hud.SendMessage ("IncCashAmount", cash);
     }
-    
+
     public void SubCash (int amount){
         cash -= amount;
     }
@@ -128,6 +129,9 @@ public class PlayerController2D : MonoBehaviour
 
     ItemManager itemManager;
     public bool playerInElevator = false;
+
+    public GameObject hud;
+
 
     public bool IsInElevator() {
         return playerInElevator;
@@ -271,6 +275,7 @@ public class PlayerController2D : MonoBehaviour
     {
 
        itemManager = new ItemManager();
+       itemManager.hud = hud;
 
        //spriteRenderer = GetComponent<RightHand>();
 

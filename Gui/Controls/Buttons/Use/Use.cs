@@ -17,6 +17,9 @@ public class Use : guiObject
     ElevatorData elevatorData;
     DoorData doorData;
 
+    float interval = 0.5f;
+    int tap;
+
     void Awake()
     {
         playerController = FindObjectOfType<PlayerController2D>();
@@ -86,6 +89,27 @@ public class Use : guiObject
     // Envia la informacion del objeto a PlayerControles2D.
     public void UseDown()
     {
+
+        // if (objectType == null) {
+
+            
+        // tap++;
+ 
+        // if (tap == 1)
+        // {
+        //     StartCoroutine(DoubleTapInterval());
+        // }
+ 
+        // else if (tap > 1)
+        // {
+        //     // Do stuff
+           
+        //     // clean tap calculation
+        //     tap = 0;
+        // }
+
+        // }
+
         if (objectType == "Elevator") {
                 if (elevatorData.active) {
                     playerController.UseElevator(elevatorData);
@@ -126,4 +150,10 @@ public class Use : guiObject
     {
         // Debug.Log ("Direction: " + info.direction);
     }
+
+    // Enumerator DoubleTapInterval()
+    // {
+    //     yield return new WaitForSeconds(interval);
+    //     this.tap = 0;
+    // }
 }
