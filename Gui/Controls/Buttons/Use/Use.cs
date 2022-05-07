@@ -17,8 +17,8 @@ public class Use : guiObject
     ElevatorData elevatorData;
     DoorData doorData;
 
-    float interval = 0.5f;
-    int tap;
+    float lastClick = 0f;
+        float interval = 0.4f;
 
     void Awake()
     {
@@ -89,6 +89,14 @@ public class Use : guiObject
     // Envia la informacion del objeto a PlayerControles2D.
     public void UseDown()
     {
+        
+        if ((lastClick+interval)>Time.time)
+            { 
+                Debug.Log ("DOBLE CLICK");
+                playerController.Sniff();
+            }
+
+        lastClick = Time.time;
 
         // if (objectType == null) {
 

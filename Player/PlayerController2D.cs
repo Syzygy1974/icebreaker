@@ -103,7 +103,7 @@ public class PlayerController2D : MonoBehaviour
     private bool isJumping;
     private bool isFalling;
 
-    private bool isGreeting;
+    private bool isGreeting; 
     private bool testigo = false;
     public static bool isWalkingRight  { get; set; } =  false;
     public static bool isWalkingLeft  { get; set; } =  false;
@@ -145,6 +145,23 @@ public class PlayerController2D : MonoBehaviour
         if (relativePosition.sqrMagnitude < 2.0f) { return 0; }
         else if (relativePosition.x > 0) { return 1; }
         else return 2;
+    }
+
+    // ==================== RECEIVER: USE BUTTON (SNIFF) =======================
+    // =========================================================================
+    public void Sniff () {
+        Vector2 size = new Vector2 (67.15f, 14.387f);
+        Debug.Log ("SNIFF");
+        Collider2D [] colliderArray = Physics2D.OverlapBoxAll (transform.position, size, 0);
+        foreach (Collider2D collider2D in colliderArray) {
+
+            if (collider2D.TryGetComponent(out Coin coin)) {
+                Debug.Log ("COIN: " + coin.item.value);
+            }
+            if (collider2D.TryGetComponent(out WadOfBills wadOfBills)) {
+                Debug.Log ("COIN: " + wadOfBills.item.value);
+            }
+        }
     }
 
     // ======================== RECEIVER: USE BUTTON ===========================
