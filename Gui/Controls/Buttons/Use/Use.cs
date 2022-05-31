@@ -18,7 +18,9 @@ public class Use : guiObject
     DoorData doorData;
 
     float lastClick = 0f;
-        float interval = 0.4f;
+    float interval = 0.4f;
+    bool doubleClick = false;
+    bool singleClick = false;
 
     void Awake()
     {
@@ -86,49 +88,51 @@ public class Use : guiObject
     // =========================================================================================
     // Cuando se presiona "USE".
     // =========================================================================================
-    // Envia la informacion del objeto a PlayerControles2D.
+    // Diferencia Click simple de Doble Click.
+    // El doble click activa el Sniff().
+    // Click unico se trata el la funcion SingleClick().
     public void UseDown()
     {
-        
+
         if ((lastClick+interval)>Time.time)
-            { 
-                Debug.Log ("DOBLE CLICK");
-                playerController.Sniff();
-            }
-
+        {
+            playerController.Sniff();
+            doubleClick = true;
+            singleClick = false;
+            lastClick = 0;
+        }
+        else {
+            doubleClick = false;
+            singleClick = true;
+        }
         lastClick = Time.time;
+    }
 
-        // if (objectType == null) {
 
-            
-        // tap++;
- 
-        // if (tap == 1)
-        // {
-        //     StartCoroutine(DoubleTapInterval());
-        // }
- 
-        // else if (tap > 1)
-        // {
-        //     // Do stuff
-           
-        //     // clean tap calculation
-        //     tap = 0;
-        // }
-
-        // }
+    // =========================================================================================
+    // Cuando se presiona "USE".
+    // =========================================================================================
+    // Trata todas las opciones de Click 
+    // Envia la informacion del objeto a PlayerControles2D.
+    private void SingleClick()
+    {
+        lastClick = 0;
+        Debug.Log ("DOBLE CLICK");
+        Debug.Log ("TIME: " + Time.time);  
 
         if (objectType == "Elevator") {
-                if (elevatorData.active) {
-                    playerController.UseElevator(elevatorData);
-                }
+            if (elevatorData.active) {
+                playerController.UseElevator(elevatorData);
+            }
         }
+    
         else if (objectType == "Staircases") {
             if (staircasesData.active) {
                 playerController.UseStaircases(staircasesData);
             }
         }
-        else if (objectType == "Door") {
+        else if (objectType == "Door") 
+        {
             if (doorData.active) {
                 // Si la puerta esta requiere llava, envia el mensaje al Player para
                 // chequear si posee la misma.
@@ -147,21 +151,15 @@ public class Use : guiObject
         }
     }
 
-    // Start is called before the first frame update
-    void Start()
-    {
-
-    }
-
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
-        // Debug.Log ("Direction: " + info.direction);
+         if (((lastClick+interval)<Time.time) && (singleClick == true)) {
+            Debug.Log ("SINGLE CLICK");
+            singleClick = false;
+            SingleClick();
+         }
+      
     }
 
-    // Enumerator DoubleTapInterval()
-    // {
-    //     yield return new WaitForSeconds(interval);
-    //     this.tap = 0;
-    // }
 }

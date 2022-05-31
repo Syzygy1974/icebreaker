@@ -4,10 +4,12 @@ using UnityEngine;
 
 public class Coin : Item
 {
+    public int value;
+
     public override void ExtendedAwake()
     {
         item.name = "Coin";
         item.type = 1;
-        item.value = 1;
+        item.value = value;
     }
 }

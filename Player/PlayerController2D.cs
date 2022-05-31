@@ -77,6 +77,9 @@ public class PlayerController2D : MonoBehaviour
     [SerializeField] float groundedGravityScale = 1.0f;
     [SerializeField] bool resetSpeedOnLand = false;
     bool autowalk = false;
+    public Texture myTexture;
+
+    public Transform eye;
 
     private Rigidbody2D controllerRigidbody;
     public static Collider2D controllerCollider { get; set; }
@@ -147,20 +150,54 @@ public class PlayerController2D : MonoBehaviour
         else return 2;
     }
 
+void OnDrawGizmosSelected()
+    {
+        Vector2 size_right = new Vector2 (30f, 22f);
+        Vector2 size_left = new Vector2 (30f, 22f);
+
+        // Gizmos.DrawGUITexture(new Rect(center, size_left), myTexture);
+    }
+
     // ==================== RECEIVER: USE BUTTON (SNIFF) =======================
     // =========================================================================
     public void Sniff () {
-        Vector2 size = new Vector2 (67.15f, 14.387f);
+        Vector2 size_right = new Vector2 (30, 22f);
+        Vector2 size_left = new Vector2 (30, 22f);
+        int cash_right = 0;
+        int cash_left = 0;
         Debug.Log ("SNIFF");
-        Collider2D [] colliderArray = Physics2D.OverlapBoxAll (transform.position, size, 0);
-        foreach (Collider2D collider2D in colliderArray) {
 
+        Vector2 center = new Vector2 (transform.position.x+15, transform.position.y);
+
+        Collider2D [] colliderArray = Physics2D.OverlapBoxAll (center, size_right, 0);
+
+        // Debug.DrawLine(transform.position, size_right, Color.green);
+        // OnDrawGizmos();
+
+        foreach (Collider2D collider2D in colliderArray) {
             if (collider2D.TryGetComponent(out Coin coin)) {
-                Debug.Log ("COIN: " + coin.item.value);
+                cash_right += coin.item.value;
+                Debug.Log ("COIN R: " + coin.item);
             }
-            if (collider2D.TryGetComponent(out WadOfBills wadOfBills)) {
-                Debug.Log ("COIN: " + wadOfBills.item.value);
+        }
+        Debug.Log ("CASH RIGTH: " + cash_right);
+
+        // colliderArray = null;
+        center = new Vector2 (transform.position.x-15, transform.position.y);
+        colliderArray = Physics2D.OverlapBoxAll (center, size_left, 0);
+        foreach (Collider2D collider2D in colliderArray) {
+            if (collider2D.TryGetComponent(out Coin coin)) {
+                cash_left =+ coin.item.value;
+                Debug.Log ("COIN L: " + coin.item);
             }
+        }
+        Debug.Log ("CASH LEFT: " + cash_left);
+
+        if (cash_right>cash_left) {
+            Debug.Log ("A LA DERECHA.");
+        }
+        else {
+            Debug.Log ("A LA IZQUIERDA.");
         }
     }
 
@@ -359,15 +396,15 @@ void Update()
         }
 
         // Solo lee la entrada de "Fire1" (Greeting) si la animacion de Greeting no esta reproduciendose.
-        if (!(animator.GetCurrentAnimatorStateInfo(1).IsName("Greeting")))
-        {
-            //if (Input.GetButtonDown("Fire1")) {
-            if (isGreeting)
-            {
-                GreetingInput = true;
-            }
-        }
-        isGreeting = false;
+        // if (!(animator.GetCurrentAnimatorStateInfo(1).IsName("Greeting")))
+        // {
+        //     //if (Input.GetButtonDown("Fire1")) {
+        //     if (isGreeting)
+        //     {
+        //         GreetingInput = true;
+        //     }
+        // }
+        // isGreeting = false;
     }
 
 void FixedUpdate()
@@ -379,7 +416,7 @@ void FixedUpdate()
         UpdateVelocity();
         UpdateDirection();
         // if (jumping) { UpdateJump(); }
-        // UpdateGreeting();
+        UpdateGreeting();
         // UpdateGravityScale();
 
         // PARA QUE SE USA???
@@ -405,7 +442,6 @@ private void UpdateElevatorWalking(){
             elevatorData.elevator.SendMessage("PlayerInElevator");
             fj = gameObject.AddComponent<FixedJoint2D >() as FixedJoint2D;
             fj.connectedBody = elevatorData.elevator.GetComponent<Rigidbody2D>();
-                                            Debug.Log ("LLEGA HASTA ACA............3");
         }
     }
 }
@@ -526,15 +562,33 @@ private void UpdateJump()
         }
     }
 
+    // ================= POSICIONA PLAYER PARA SUBIR ELEVATOR  ================
+    // Es llamada por un evento en la animacion "greeting" (en el momento
+    // en que la mano esta arriba).
+    // ========================================================================
+    public void DetectNPC(){
+        Vector2 position = eye.transform.position;
+        float distance = 19f;
+        Vector2 direction = Vector2.right * distance;
+
+        Debug.DrawRay(eye.position, direction, Color.green, 2);
+        RaycastHit2D hit = Physics2D.Raycast(eye.position, direction, distance);
+        if (hit.collider != null) {
+            if (hit.collider.gameObject.tag == "npc") {
+                Debug.Log ("DETECTADO: " + hit.collider.gameObject.tag);
+                hit.collider.gameObject.SendMessage ("ReceiveGreeting", gameObject);
+            }
+        }
+    }
+
     private void UpdateGreeting()
     {
-        if (GreetingInput) {
-            // debugText.SendMessage ("DisplayText", "Saluda...");
-            // animator.SetBool("Greeting", true);
-            animator.SetTrigger("Greeting");
-            // animator.Play("Greeting");
-            GreetingInput = false;
-            //ChangeSprite();
+        if (isGreeting) {
+            if (!(animator.GetCurrentAnimatorStateInfo(1).IsName("Greeting"))) {
+                animator.SetTrigger("Greeting");
+                isGreeting = false;
+                // ChangeSprite();
+            }
         }
     }
 
